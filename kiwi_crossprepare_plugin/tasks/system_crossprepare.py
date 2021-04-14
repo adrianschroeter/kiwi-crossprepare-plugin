@@ -51,8 +51,19 @@ options:
         preparation attempt.
 """
 import logging
+import os
+import shutil
+from tempfile import TemporaryDirectory
+
+from kiwi.command import Command
+from kiwi.path import Path
 from kiwi.tasks.base import CliTask
 from kiwi.help import Help
+
+from kiwi.exceptions import (
+    KiwiFileNotFound,
+    KiwiRootDirExists
+)
 
 log = logging.getLogger('kiwi')
 
@@ -62,3 +73,51 @@ class SystemCrossprepareTask(CliTask):
         self.manual = Help()
         if self.command_args.get('help') is True:
             return self.manual.show('kiwi::system::crossprepare')
+
+        init_binary = self.command_args.get('--init')
+        if not os.path.isfile(init_binary):
+            raise KiwiFileNotFound(
+                f'init binary {init_binary!r} not found'
+            )
+
+        target_dir = self.command_args.get('--target-dir')
+        if os.path.isdir(target_dir) \
+           and not self.command_args.get('--allow-existing-root'):
+            raise KiwiRootDirExists(
+                f'image target dir {target_dir!r} already exists'
+            )
+
+        # Copy init binary with execution permissions to
+        # python managed temporary directory
+        init_dir = TemporaryDirectory(prefix='initvm_')
+        shutil.copy(init_binary, init_dir.name)
+        init_binary = os.sep.join(
+            [init_dir.name, os.path.basename(init_binary)]
+        )
+        os.chmod(init_binary, 0o755)
+
+        # Create new target image directory structure including
+        # QEMU bin format handlers
+        target_arch = self.command_args.get('--target-arch')
+        target_bin_dir = os.sep.join(
+            [target_dir, 'image-root', 'usr', 'bin']
+        )
+        qemu_binaries = [
+            '/usr/bin/qemu-binfmt',
+            f'/usr/bin/qemu-{target_arch}-binfmt',
+            f'/usr/bin/qemu-{target_arch}'
+        ]
+        if not os.path.isdir(target_dir):
+            Path.create(target_bin_dir)
+        log.info(f'Copying QEMU binaries to: {target_bin_dir!r}')
+        for qemu_binary in qemu_binaries:
+            if not os.path.exists(qemu_binary):
+                raise KiwiFileNotFound(
+                    f'QEMU binary {qemu_binary!r} not found'
+                )
+            log.info(f'--> {qemu_binary}')
+            shutil.copy(qemu_binary, target_bin_dir)
+
+        # Call init binary
+        log.info(f'Calling init binary {init_binary!r}')
+        Command.run([init_binary])

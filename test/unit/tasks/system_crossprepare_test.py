@@ -1,9 +1,15 @@
 import sys
 
+from pytest import raises
 from mock import (
-    Mock, patch
+    Mock, patch, call
 )
 from kiwi_crossprepare_plugin.tasks.system_crossprepare import SystemCrossprepareTask
+
+from kiwi.exceptions import (
+    KiwiFileNotFound,
+    KiwiRootDirExists
+)
 
 
 class TestSystemCrossprepareTask:
@@ -36,4 +42,77 @@ class TestSystemCrossprepareTask:
         self.task.process()
         Help.show.assert_called_once_with(
             'kiwi::system::crossprepare'
+        )
+
+    @patch('os.path.isfile')
+    def test_process_raises_init_binary_not_found(self, mock_path_isfile):
+        mock_path_isfile.return_value = False
+        self.task.command_args['crossprepare'] = True
+        with raises(KiwiFileNotFound):
+            self.task.process()
+
+    @patch('os.path.isfile')
+    @patch('os.path.isdir')
+    def test_process_raises_target_dir_exists(
+        self, mock_path_isdir, mock_path_isfile
+    ):
+        mock_path_isfile.return_value = True
+        mock_path_isdir.return_value = True
+        self.task.command_args['crossprepare'] = True
+        with raises(KiwiRootDirExists):
+            self.task.process()
+
+    @patch('shutil.copy')
+    @patch('os.chmod')
+    @patch('kiwi_crossprepare_plugin.tasks.system_crossprepare.TemporaryDirectory')
+    @patch('kiwi_crossprepare_plugin.tasks.system_crossprepare.Path.create')
+    @patch('kiwi_crossprepare_plugin.tasks.system_crossprepare.Command.run')
+    @patch('os.path.isfile')
+    @patch('os.path.isdir')
+    @patch('os.path.exists')
+    def test_process(
+        self, mock_os_path_exists, mock_os_path_isdir,
+        mock_os_path_isfile, mock_Command_run, mock_Path_create,
+        mock_TemporaryDirectory, mock_os_chmod, mock_shutil_copy
+    ):
+        mock_os_path_isdir.return_value = False
+        init_dir = Mock()
+        init_dir.name = '/tmp/initvm_X'
+        mock_TemporaryDirectory.return_value = init_dir
+        self._init_command_args()
+        self.task.command_args['crossprepare'] = True
+        self.task.command_args['--allow-existing-root'] = True
+
+        mock_os_path_exists.return_value = False
+        with raises(KiwiFileNotFound):
+            self.task.process()
+
+        mock_TemporaryDirectory.reset_mock()
+        mock_shutil_copy.reset_mock()
+        mock_Path_create.reset_mock()
+        mock_os_path_exists.return_value = True
+        self.task.process()
+        mock_TemporaryDirectory.assert_called_once_with(
+            prefix='initvm_'
+        )
+        assert mock_shutil_copy.call_args_list == [
+            call('/some/qemu/binfmt/init', '/tmp/initvm_X'),
+            call(
+                '/usr/bin/qemu-binfmt',
+                '../data/target_dir/image-root/usr/bin'
+            ),
+            call(
+                '/usr/bin/qemu-x86_64-binfmt',
+                '../data/target_dir/image-root/usr/bin'
+            ),
+            call(
+                '/usr/bin/qemu-x86_64',
+                '../data/target_dir/image-root/usr/bin'
+            )
+        ]
+        mock_Path_create.assert_called_once_with(
+            '../data/target_dir/image-root/usr/bin'
+        )
+        mock_Command_run.assert_called_once_with(
+            ['/tmp/initvm_X/init']
         )
