@@ -1,5 +1,5 @@
 # Copyright (c) 2020 SUSE Software Solutions Germany GmbH.  All rights reserved.
-# 
+#
 # This file is part of kiwi-crossprepare-build.
 #
 # kiwi-crossprepare-build is free software: you can redistribute it and/or modify
@@ -51,17 +51,14 @@ options:
         preparation attempt.
 """
 import logging
-import os
-from docopt import docopt
 from kiwi.tasks.base import CliTask
 from kiwi.help import Help
-import kiwi.tasks.system_build
 
 log = logging.getLogger('kiwi')
 
 
 class SystemCrossprepareTask(CliTask):
-    def process(self):
+    def process(self) -> None:
         self.manual = Help()
         if self.command_args.get('help') is True:
             return self.manual.show('kiwi::system::crossprepare')
