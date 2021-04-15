@@ -53,6 +53,7 @@ options:
 import logging
 import os
 import shutil
+import yaml
 from tempfile import TemporaryDirectory
 
 from kiwi.command import Command
@@ -102,6 +103,9 @@ class SystemCrossprepareTask(CliTask):
         target_bin_dir = os.sep.join(
             [target_dir, 'image-root', 'usr', 'bin']
         )
+        target_image_dir = os.sep.join(
+            [target_dir, 'image-root', 'image']
+        )
         qemu_binaries = [
             '/usr/bin/qemu-binfmt',
             f'/usr/bin/qemu-{target_arch}-binfmt',
@@ -109,6 +113,8 @@ class SystemCrossprepareTask(CliTask):
         ]
         if not os.path.isdir(target_dir):
             Path.create(target_bin_dir)
+        if not os.path.isdir(target_image_dir):
+            Path.create(target_image_dir)
         log.info(f'Copying QEMU binaries to: {target_bin_dir!r}')
         for qemu_binary in qemu_binaries:
             if not os.path.exists(qemu_binary):
@@ -117,6 +123,10 @@ class SystemCrossprepareTask(CliTask):
                 )
             log.info(f'--> {qemu_binary}')
             shutil.copy(qemu_binary, target_bin_dir)
+
+        # Write files to exclude as metadata for kiwi
+        with open(target_image_dir + '/exclude_files.yaml', 'w') as exclude:
+            yaml.dump({'exclude': qemu_binaries}, exclude)
 
         # Call init binary
         log.info(f'Calling init binary {init_binary!r}')

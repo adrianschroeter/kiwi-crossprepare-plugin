@@ -1,8 +1,8 @@
 import sys
-
+import io
 from pytest import raises
 from mock import (
-    Mock, patch, call
+    Mock, patch, call, MagicMock
 )
 from kiwi_crossprepare_plugin.tasks.system_crossprepare import SystemCrossprepareTask
 
@@ -70,8 +70,9 @@ class TestSystemCrossprepareTask:
     @patch('os.path.isfile')
     @patch('os.path.isdir')
     @patch('os.path.exists')
+    @patch('yaml.dump')
     def test_process(
-        self, mock_os_path_exists, mock_os_path_isdir,
+        self, mock_yaml_dump, mock_os_path_exists, mock_os_path_isdir,
         mock_os_path_isfile, mock_Command_run, mock_Path_create,
         mock_TemporaryDirectory, mock_os_chmod, mock_shutil_copy
     ):
@@ -91,7 +92,20 @@ class TestSystemCrossprepareTask:
         mock_shutil_copy.reset_mock()
         mock_Path_create.reset_mock()
         mock_os_path_exists.return_value = True
-        self.task.process()
+        with patch('builtins.open', create=True) as mock_open:
+            mock_open.return_value = MagicMock(spec=io.IOBase)
+            file_handle = mock_open.return_value.__enter__.return_value
+            self.task.process()
+            mock_yaml_dump.assert_called_once_with(
+                {
+                    'exclude': [
+                        '/usr/bin/qemu-binfmt',
+                        '/usr/bin/qemu-x86_64-binfmt',
+                        '/usr/bin/qemu-x86_64'
+                    ]
+                }, file_handle
+            )
+
         mock_TemporaryDirectory.assert_called_once_with(
             prefix='initvm_'
         )
@@ -110,9 +124,10 @@ class TestSystemCrossprepareTask:
                 '../data/target_dir/image-root/usr/bin'
             )
         ]
-        mock_Path_create.assert_called_once_with(
-            '../data/target_dir/image-root/usr/bin'
-        )
+        assert mock_Path_create.call_args_list == [
+            call('../data/target_dir/image-root/usr/bin'),
+            call('../data/target_dir/image-root/image')
+        ]
         mock_Command_run.assert_called_once_with(
             ['/tmp/initvm_X/init']
         )

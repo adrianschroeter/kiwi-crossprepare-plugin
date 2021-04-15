@@ -26,9 +26,7 @@ config = {
     'install_requires': [
         'docopt',
         'kiwi>=9.21.21',
-        'requests',
-        'PyYAML',
-        'cerberus'
+        'PyYAML'
     ],
     'packages': ['kiwi_crossprepare_plugin'],
     'entry_points': {
