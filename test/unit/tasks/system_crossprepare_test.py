@@ -113,20 +113,20 @@ class TestSystemCrossprepareTask:
             call('/some/qemu/binfmt/init', '/tmp/initvm_X'),
             call(
                 '/usr/bin/qemu-binfmt',
-                '../data/target_dir/image-root/usr/bin'
+                '../data/target_dir/build/image-root/usr/bin'
             ),
             call(
                 '/usr/bin/qemu-x86_64-binfmt',
-                '../data/target_dir/image-root/usr/bin'
+                '../data/target_dir/build/image-root/usr/bin'
             ),
             call(
                 '/usr/bin/qemu-x86_64',
-                '../data/target_dir/image-root/usr/bin'
+                '../data/target_dir/build/image-root/usr/bin'
             )
         ]
         assert mock_Path_create.call_args_list == [
-            call('../data/target_dir/image-root/usr/bin'),
-            call('../data/target_dir/image-root/image')
+            call('../data/target_dir/build/image-root/usr/bin'),
+            call('../data/target_dir/build/image-root/image')
         ]
         mock_Command_run.assert_called_once_with(
             ['/tmp/initvm_X/init']

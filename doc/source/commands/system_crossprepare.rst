@@ -56,7 +56,7 @@ OPTIONS
 --target-dir=<directory>
 
   Path to store the build results. The crossprepare command will initialize
-  a new root directory at `<directory>/image-root/` which is compatible to
+  a new root directory at `<directory>/build/image-root/` which is compatible to
   how the {kiwi} `build` command does it. Therefore the specified `--target-dir`
   argument here can also be used for a subsequent `build` command.
   

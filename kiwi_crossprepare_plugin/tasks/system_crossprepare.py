@@ -42,7 +42,7 @@ options:
         be called and trusted to do the right thing.
     --target-dir=<directory>
         path to store the build results. The crossprepare command will
-        initialize a new root directory at <directory>/image-root/
+        initialize a new root directory at <directory>/build/image-root/
         which is compatible to how the kiwi build command does it.
         Therefore the specified --target-dir argument can also be
         used for a subsequent kiwi build command.
@@ -101,10 +101,10 @@ class SystemCrossprepareTask(CliTask):
         # QEMU bin format handlers
         target_arch = self.command_args.get('--target-arch')
         target_bin_dir = os.sep.join(
-            [target_dir, 'image-root', 'usr', 'bin']
+            [target_dir, 'build', 'image-root', 'usr', 'bin']
         )
         target_image_dir = os.sep.join(
-            [target_dir, 'image-root', 'image']
+            [target_dir, 'build', 'image-root', 'image']
         )
         qemu_binaries = [
             '/usr/bin/qemu-binfmt',
