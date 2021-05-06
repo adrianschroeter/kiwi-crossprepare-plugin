@@ -124,10 +124,6 @@ class SystemCrossprepareTask(CliTask):
             log.info(f'--> {qemu_binary}')
             shutil.copy(qemu_binary, target_bin_dir)
 
-        # Write files to exclude as metadata for kiwi
-        with open(target_image_dir + '/exclude_files.yaml', 'w') as exclude:
-            yaml.dump({'exclude': qemu_binaries}, exclude)
-
         # Call init binary
         log.info(f'Calling init binary {init_binary!r}')
         Command.run([init_binary])
