@@ -1,8 +1,7 @@
 import sys
-import io
 from pytest import raises
 from mock import (
-    Mock, patch, call, MagicMock
+    Mock, patch, call
 )
 from kiwi_crossprepare_plugin.tasks.system_crossprepare import SystemCrossprepareTask
 
@@ -92,19 +91,8 @@ class TestSystemCrossprepareTask:
         mock_shutil_copy.reset_mock()
         mock_Path_create.reset_mock()
         mock_os_path_exists.return_value = True
-        with patch('builtins.open', create=True) as mock_open:
-            mock_open.return_value = MagicMock(spec=io.IOBase)
-            file_handle = mock_open.return_value.__enter__.return_value
-            self.task.process()
-            mock_yaml_dump.assert_called_once_with(
-                {
-                    'exclude': [
-                        '/usr/bin/qemu-binfmt',
-                        '/usr/bin/qemu-x86_64-binfmt',
-                        '/usr/bin/qemu-x86_64'
-                    ]
-                }, file_handle
-            )
+
+        self.task.process()
 
         mock_TemporaryDirectory.assert_called_once_with(
             prefix='initvm_'

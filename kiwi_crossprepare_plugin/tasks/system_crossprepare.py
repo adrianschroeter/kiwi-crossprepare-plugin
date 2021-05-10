@@ -53,7 +53,6 @@ options:
 import logging
 import os
 import shutil
-import yaml
 from tempfile import TemporaryDirectory
 
 from kiwi.command import Command
