@@ -54,6 +54,7 @@ import logging
 import os
 import shutil
 from tempfile import TemporaryDirectory
+from textwrap import dedent
 
 from kiwi.command import Command
 from kiwi.path import Path
@@ -65,6 +66,10 @@ from kiwi.exceptions import (
     KiwiRootDirExists
 )
 
+from kiwi_crossprepare_plugin.exceptions import (
+    KiwiSystemCrossprepareUnsupportedEnvironmentError
+)
+
 log = logging.getLogger('kiwi')
 
 
@@ -73,6 +78,14 @@ class SystemCrossprepareTask(CliTask):
         self.manual = Help()
         if self.command_args.get('help') is True:
             return self.manual.show('kiwi::system::crossprepare')
+
+        if self.is_docker_env():
+            message = dedent('''\n
+                cross architecture setup is disabled in privileged container
+
+                Ensure binfmtmisc handler got enabled external before
+            ''')
+            raise KiwiSystemCrossprepareUnsupportedEnvironmentError(message)
 
         init_binary = self.command_args.get('--init')
         if not os.path.isfile(init_binary):
@@ -105,9 +118,8 @@ class SystemCrossprepareTask(CliTask):
         target_image_dir = os.sep.join(
             [target_dir, 'build', 'image-root', 'image']
         )
-        qemu_arch = target_arch
-        if qemu_arch in ['armv6l', 'armv6hl', 'armv7l', 'armv7hl']:
-            qemu_arch = 'arm'
+        arm_archs = ['armv6l', 'armv6hl', 'armv7l', 'armv7hl']
+        qemu_arch = 'arm' if target_arch in arm_archs else target_arch
         qemu_binaries = [
             '/usr/bin/qemu-binfmt',
             f'/usr/bin/qemu-{qemu_arch}-binfmt',
@@ -127,9 +139,10 @@ class SystemCrossprepareTask(CliTask):
             shutil.copy(qemu_binary, target_bin_dir)
 
         # Call init binary
-        if os.path.isfile('/.dockerenv.privileged'):
-            log.warning('kiwi cross architecture setup is disabled in privileged docker. Ensure binfmtmisc handler got enabled external before')
-            return
-
         log.info(f'Calling init binary {init_binary!r}')
         Command.run([init_binary])
+
+    def is_docker_env(self) -> bool:
+        if os.path.isfile('/.dockerenv.privileged'):
+            return True
+        return False

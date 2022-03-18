@@ -10,6 +10,10 @@ from kiwi.exceptions import (
     KiwiRootDirExists
 )
 
+from kiwi_crossprepare_plugin.exceptions import (
+    KiwiSystemCrossprepareUnsupportedEnvironmentError
+)
+
 
 class TestSystemCrossprepareTask:
     def setup(self):
@@ -53,16 +57,32 @@ class TestSystemCrossprepareTask:
         with raises(KiwiFileNotFound):
             self.task.process()
 
+    @patch.object(SystemCrossprepareTask, 'is_docker_env')
+    def test_process_raises_in_docker_environment(self, mock_is_docker_env):
+        mock_is_docker_env.return_value = True
+        with raises(KiwiSystemCrossprepareUnsupportedEnvironmentError):
+            self.task.process()
+
     @patch('os.path.isfile')
     @patch('os.path.isdir')
+    @patch.object(SystemCrossprepareTask, 'is_docker_env')
     def test_process_raises_target_dir_exists(
-        self, mock_path_isdir, mock_path_isfile
+        self, mock_is_docker_env, mock_path_isdir, mock_path_isfile
     ):
+        mock_is_docker_env.return_value = False
         mock_path_isfile.return_value = True
         mock_path_isdir.return_value = True
         self.task.command_args['crossprepare'] = True
         with raises(KiwiRootDirExists):
             self.task.process()
+
+    @patch('os.path.isfile')
+    def test_is_docker_env(self, mock_os_path_isfile):
+        mock_os_path_isfile.return_value = True
+        assert self.task.is_docker_env() is True
+        mock_os_path_isfile.assert_called_once_with('/.dockerenv.privileged')
+        mock_os_path_isfile.return_value = False
+        assert self.task.is_docker_env() is False
 
     @patch('shutil.copy')
     @patch('os.chmod')
@@ -73,11 +93,15 @@ class TestSystemCrossprepareTask:
     @patch('os.path.isdir')
     @patch('os.path.exists')
     @patch('yaml.dump')
+    @patch.object(SystemCrossprepareTask, 'is_docker_env')
     def test_process(
-        self, mock_yaml_dump, mock_os_path_exists, mock_os_path_isdir,
-        mock_os_path_isfile, mock_Command_run, mock_Path_create,
-        mock_TemporaryDirectory, mock_os_chmod, mock_shutil_copy
+        self, mock_is_docker_env, mock_yaml_dump, mock_os_path_exists,
+        mock_os_path_isdir, mock_os_path_isfile, mock_Command_run,
+        mock_Path_create, mock_TemporaryDirectory, mock_os_chmod,
+        mock_shutil_copy
     ):
+        mock_is_docker_env.return_value = False
+        mock_os_path_isfile.return_value = True
         mock_os_path_isdir.return_value = False
         init_dir = Mock()
         init_dir.name = '/tmp/initvm_X'
