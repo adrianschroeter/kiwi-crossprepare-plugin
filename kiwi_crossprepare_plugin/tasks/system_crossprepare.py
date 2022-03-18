@@ -106,7 +106,7 @@ class SystemCrossprepareTask(CliTask):
             [target_dir, 'build', 'image-root', 'image']
         )
         qemu_arch = target_arch
-        if qemu_arch in [ 'armv6l', 'armv6hl', 'armv7l', 'armv7hl' ]:
+        if qemu_arch in ['armv6l', 'armv6hl', 'armv7l', 'armv7hl']:
             qemu_arch = 'arm'
         qemu_binaries = [
             '/usr/bin/qemu-binfmt',
