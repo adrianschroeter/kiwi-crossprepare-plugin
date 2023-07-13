@@ -125,7 +125,7 @@ class SystemCrossprepareTask(CliTask):
             f'/usr/bin/qemu-{qemu_arch}-binfmt',
             f'/usr/bin/qemu-{qemu_arch}'
         ]
-        if not os.path.isdir(target_dir):
+        if not os.path.isdir(target_bin_dir):
             Path.create(target_bin_dir)
         if not os.path.isdir(target_image_dir):
             Path.create(target_image_dir)
@@ -137,6 +137,15 @@ class SystemCrossprepareTask(CliTask):
                 )
             log.info(f'--> {qemu_binary}')
             shutil.copy(qemu_binary, target_bin_dir)
+
+        if os.path.exists('/usr/sbin/mkfs.btrfs.static'):
+            # path from qemu binfmt helper
+            host_arch = 'x86_64'
+            emul_dir = f'{host_arch}-for-{qemu_arch}'
+            target_emul_dir = [ target_dir, 'build', 'image-root', 'emul', emul_dir, 'usr', 'sbin' ]
+            Path.create(os.sep.join(target_emul_dir))
+            target_emul_dir.append('mkfs.btrfs')
+            shutil.copy('/usr/sbin/mkfs.btrfs.static', os.sep.join(target_emul_dir))
 
         # Call init binary
         if os.path.isfile('/.dockerenv.privileged'):
