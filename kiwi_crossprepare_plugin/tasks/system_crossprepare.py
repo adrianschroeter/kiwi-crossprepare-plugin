@@ -147,6 +147,15 @@ class SystemCrossprepareTask(CliTask):
             target_emul_dir.append('mkfs.btrfs')
             shutil.copy('/usr/sbin/mkfs.btrfs.static', os.sep.join(target_emul_dir))
 
+        if os.path.exists('/usr/bin/xz.static'):
+            # path from qemu binfmt helper
+            host_arch = 'x86_64'
+            emul_dir = f'{host_arch}-for-{qemu_arch}'
+            target_emul_dir = [ target_dir, 'build', 'image-root', 'emul', emul_dir, 'usr', 'bin' ]
+            Path.create(os.sep.join(target_emul_dir))
+            target_emul_dir.append('xz')
+            shutil.copy('/usr/bin/xz.static', os.sep.join(target_emul_dir))
+
         # Call init binary
         if os.path.isfile('/.dockerenv.privileged'):
             log.warning('kiwi cross architecture setup is disabled in privileged docker. Ensure binfmtmisc handler got enabled external before')
