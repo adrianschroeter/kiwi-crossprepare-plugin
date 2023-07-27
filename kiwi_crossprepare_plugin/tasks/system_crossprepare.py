@@ -147,6 +147,19 @@ class SystemCrossprepareTask(CliTask):
             target_emul_dir.append('mkfs.btrfs')
             shutil.copy('/usr/sbin/mkfs.btrfs.static', os.sep.join(target_emul_dir))
 
+        if os.path.exists('/usr/sbin/btrfs.static'):
+            # path from qemu binfmt helper
+            host_arch = 'x86_64'
+            emul_dir = f'{host_arch}-for-{qemu_arch}'
+            target_emul_dir = [ target_dir, 'build', 'image-root', 'emul', emul_dir, 'usr', 'sbin' ]
+            Path.create(os.sep.join(target_emul_dir))
+            target_emul_dir.append('btrfs')
+            shutil.copy('/usr/sbin/btrfs.static', os.sep.join(target_emul_dir))
+            target_emul_dir = [ target_dir, 'build', 'image-root', 'emul', emul_dir, 'sbin' ]
+            Path.create(os.sep.join(target_emul_dir))
+            target_emul_dir.append('btrfs')
+            shutil.copy('/usr/sbin/btrfs.static', os.sep.join(target_emul_dir))
+
         if os.path.exists('/usr/bin/xz.static'):
             # path from qemu binfmt helper
             host_arch = 'x86_64'
